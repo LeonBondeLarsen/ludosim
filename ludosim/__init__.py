@@ -29,7 +29,7 @@ class LudoSim(object):
     def __init__(self, printout=True):
         self.state = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
         self.globes = [1,9,14,22,27,35,40,48]
-        self.stars = [6,12,19,25,32,38,45,51]
+        self.stars = [6,12,19,25,32,38,45]
         self.goal_state = [51,51,51,51]
         self.printout = printout
 
@@ -53,6 +53,7 @@ class LudoSim(object):
                     index = self.stars.index(token+roll)
                     index = (index + 1) % len(self.stars)
                     out.append(self.stars[index])
+                    #print " !!! star portal !!!                           <---"
                 else :
                     out.append(token + roll)
         return out
@@ -74,6 +75,7 @@ class LudoSim(object):
         player_index = 0
         turn = 0
         while not winner:
+            turn += 1
             player = players[player_index]
             if self.printout :
                 print "Turn number " + str(turn)
