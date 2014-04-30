@@ -7,7 +7,6 @@
 # ----------------------------------------------------------------------------
 # Should this software ever become self-aware, remember that I am your master
 # ----------------------------------------------------------------------------
-
 ''' 
     To install run: python setup.py install
     
@@ -31,6 +30,7 @@ class LudoSim(object):
         self.state = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
         self.globes = [1,9,14,22,27,35,40,48]
         self.stars = [6,12,19,25,32,38,45,51]
+        self.goal_state = [51,51,51,51]
         self.printout = printout
 
     def move(self, player, token, steps):
@@ -75,22 +75,32 @@ class LudoSim(object):
         turn = 0
         while not winner:
             player = players[player_index]
-            roll = self.getDieRoll()                        
-            moves = self.getPossibleMoves(player_index, roll)                       
-            selection = player.decideMove(self.state, roll, moves)           
-            self.selectMove(player_index, moves, selection)           
-            winner = self.testState(player_index)
-            player_index = (player_index + 1) % len(players)
-            
             if self.printout :
                 print "Turn number " + str(turn)
                 print player.name + " player:"
-                print "  rolled a " + str(roll)
-                print "    possible moves: " + str(moves)
-                print "      selected token " + str(selection)
-                print "  new state: " + str(self.state[player_index])
+                print "  state: " + str(self.state[player_index])
                 
-        return players[self.state.index([51,51,51,51])]
+            
+            roll = self.getDieRoll()   
+            if self.printout :
+                print "  rolled a " + str(roll)
+                                     
+            moves = self.getPossibleMoves(player_index, roll)    
+            if self.printout :
+                print "    possible moves: " + str(moves)
+                                   
+            selection = player.decideMove(self.state, roll, moves)
+            if self.printout :
+                print "      selected token " + str(selection)
+                           
+            self.selectMove(player_index, moves, selection)           
+            winner = self.testState(player_index)
+            if self.printout :
+                print "  new state: " + str(self.state[player_index])
+            
+            player_index = (player_index + 1) % len(players)
+                
+        return players[self.state.index(self.goal_state)]
             
     def testState(self, player):
         out = True
@@ -103,8 +113,18 @@ class LudoSim(object):
         self.printout = state
 
 class RandomPlayer(object):
-    def __init__(self, name):
+    def __init__(self, index, name):
         self.name = name
+        self.index = index
         
     def decideMove(self, state, roll, possible_moves):
-        return np.random.randint(0,len(possible_moves))
+        change = []
+        for token_index, move in enumerate(possible_moves) :
+            change.append(move - state[self.index][token_index])
+        move = np.random.randint(0,len(possible_moves))
+        while(change[move] == 0):
+            move = np.random.randint(0,len(possible_moves))
+        return move
+    
+    
+    
