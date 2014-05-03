@@ -6,32 +6,38 @@
 # buy me a beer in return.
 # ----------------------------------------------------------------------------
 # Should this software ever become self-aware, remember that I am your master
+#
+# To install run: python setup.py install
 # ----------------------------------------------------------------------------
 ''' 
-    To install run: python setup.py install
-    
-    To use:
-
-import ludosim
-            
-if __name__ == '__main__':      
-    sim = ludosim.LudoSim(printout=True)
-    players = [ludosim.RandomPlayer('Yellow'), 
-               ludosim.RandomPlayer('Red'), 
-               ludosim.RandomPlayer('Green'), 
-               ludosim.RandomPlayer('Blue') ]
-    winner = sim.playGame(players)
-    print winner.name + " won the game"
+    Rules implemented:
+        A six must be rolled to leave start
+        Token hitting a star is transported to next star
+        Exact number must be rolled to hit home
+        
+    Rules not implemented
+        Token hit by enemy must restart
+        Two tokens on same tile are safe
+        Token on globe is safe
+        
 '''
 import numpy as np
 
 class LudoSim(object):
     def __init__(self, printout=True):
-        self.state = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
-        self.globes = [1,9,14,22,27,35,40,48]
-        self.stars = [6,12,19,25,32,38,45]
-        self.goal_state = [51,51,51,51]
+        # Parse parameters
         self.printout = printout
+        
+        # Setup
+        self.globes = [1,9,14,22,27,35,40,48]
+        self.stars = [6,12,19,25,32,38,45,51]
+        self.start = 0
+        self.home = 57
+        self.runway_start = 52
+        
+        # Class variables
+        self.state = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
+        self.goal_state = [self.home,self.home,self.home,self.home]
 
     def move(self, player, token, steps):
         self.state[player][token] += steps
@@ -42,27 +48,39 @@ class LudoSim(object):
     def getPossibleMoves(self, player, roll):
         out = []
         for token in self.state[player]:
-            if self.tokenAtStart(token) and (roll == 6) :
-                out.append(1)
+            if self.tokenAtStart(token) :
+                if roll == 6 :
+                    out.append(1)
+                else :
+                    out.append(0)
+                  
             elif self.tokenAtHome(token):
                 out.append(token)
+                
+            elif self.tokenAtRunway(token+roll):
+                if token + roll == self.home :
+                    out.append(self.home)
+                else:
+                    out.append(self.home - ((token+roll)%self.home))
+                
             else:
-                if (token + roll) > 51 :
-                    out.append(51)
-                elif (token+roll) in self.stars :           # The token jumps to the next star
+                if (token+roll) in self.stars :
                     index = self.stars.index(token+roll)
-                    index = (index + 1) % len(self.stars)
+                    if index + 1 < len(self.stars) - 1 :
+                        index = (index + 1)
                     out.append(self.stars[index])
-                    #print " !!! star portal !!!                           <---"
                 else :
                     out.append(token + roll)
         return out
     
     def tokenAtStart(self, token):
-        return token == 0
+        return token == self.start
     
     def tokenAtHome(self, token):
-        return token >= 51
+        return token >= self.home
+    
+    def tokenAtRunway(self, token):
+        return token > self.runway_start
     
     def getDieRoll(self):
         return np.random.randint(1,7)
@@ -75,6 +93,7 @@ class LudoSim(object):
         player_index = 0
         turn = 0
         while not winner:
+            player_index = (player_index + 1) % len(players)
             turn += 1
             player = players[player_index]
             if self.printout :
@@ -90,21 +109,25 @@ class LudoSim(object):
             moves = self.getPossibleMoves(player_index, roll)    
             if self.printout :
                 print "    possible moves: " + str(moves)
-                                   
-            selection = player.decideMove(self.state, roll, moves)
-            if self.printout :
-                print "      selected token " + str(selection)
+            
+            if not moves == self.state[player_index] :                       
+                selection = player.decideMove(self.state, roll, moves)
+                self.selectMove(player_index, moves, selection)
+                if self.printout :
+                    print "      selected token " + str(selection)
+            else :
+                if self.printout :
+                    print "      no moves possible - passing "
                            
-            self.selectMove(player_index, moves, selection)           
-            winner = self.testState(player_index)
+                       
+            winner = self.wonGame(player_index)
             if self.printout :
                 print "  new state: " + str(self.state[player_index])
             
-            player_index = (player_index + 1) % len(players)
-                
-        return players[self.state.index(self.goal_state)]
+        return players[player_index]                
+        #return players[self.state.index(self.goal_state)]
             
-    def testState(self, player):
+    def wonGame(self, player):
         out = True
         for token in range(len(self.state[player])):
             if self.state[player][token] < 51 :
