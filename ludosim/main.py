@@ -30,7 +30,7 @@ if __name__ == '__main__':
     
     # Run a lot of games
     for i in range(1000) :
-        sim = ludosim.LudoSim(printout=False, statics=False, dynamics=False)
+        sim = ludosim.LudoSim(printout=False, statics=True, dynamics=True)
         winner = sim.playGame(players).index
         wins[winner] = wins[winner]+1
         winner_vect.append(wins[:]) 

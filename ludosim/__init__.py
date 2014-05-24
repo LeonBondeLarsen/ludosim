@@ -41,8 +41,9 @@ class LudoSim(object):
         self.state = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
         self.goal_state = [self.home,self.home,self.home,self.home]
         self.token_restart_counter = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
-
-
+        self.protected_counter = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
+        self.hit_home_counter = [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]
+        
     def playGame(self, players):
         '''
             Method to simulate one game of Ludo.
@@ -178,25 +179,33 @@ class LudoSim(object):
         self.moveTo(player, move, possible_moves[move])
         
         
-    def moveTo(self, player, token, tile):
-        if self.inEnemyCollision(player, tile) and self.dynamics:
+    def moveTo(self, player, token, target_tile):
+        if self.inEnemyCollision(player, target_tile) and self.dynamics:
             absolute_state = self.getConvertedState(player)
-            for index, state in enumerate(absolute_state):
-                if not index == player : # dont test self
-                    if tile in state :
-                        if tile in self.globes or state.count(tile) > 1 :
+            
+            # Iterate through absolute state to discern collisions
+            for player_index, player_state in enumerate(absolute_state):
+                if not player_index == player : # dont test self
+                    if target_tile in player_state :
+                        
+                        # Discern if the token hit is protected
+                        if target_tile in self.globes or player_state.count(target_tile) > 1 :
                             if self.printout :
                                 print "  hit a protected token and returns token to start"
                             self.state[player][token] = 0 # Hit a safe field
                             self.token_restart_counter[player][token] += 1
-                        elif state.count(tile) == 1 :
+                            self.protected_counter[player][token] += 1
+                        
+                        # Otherwise hit home the token occupying the target tile
+                        elif player_state.count(target_tile) == 1 :
                             if self.printout :
-                                print "  hit home token " + str(state.index(tile)) + " of player " + str(index)
-                            self.state[index][state.index(tile)] = 0 # Hit home rule
-                            self.token_restart_counter[index][state.index(tile)] += 1
-                            self.state[player][token] = tile
+                                print "  hit home token " + str(player_state.index(target_tile)) + " of player " + str(player_index)
+                            self.state[player_index][player_state.index(target_tile)] = 0 # Hit home rule
+                            self.token_restart_counter[player_index][player_state.index(target_tile)] += 1
+                            self.state[player][token] = target_tile
+                            self.hit_home_counter[player][token] += 1
         else:
-            self.state[player][token] = tile
+            self.state[player][token] = target_tile
         
     def inEnemyCollision(self, player, tile):
         if self.dynamics :
