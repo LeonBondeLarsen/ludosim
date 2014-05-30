@@ -69,7 +69,7 @@ class LudoSim(object):
             player = players[player_index]
             if self.printout :
                 print "Turn number " + str(turn)
-                print player.name + " player:"
+                print "Player " + str(player_index) + " " + player.name + " player:"
                 print "  state: " + str(self.state[player_index])
                 
             # Die roll
@@ -83,8 +83,12 @@ class LudoSim(object):
             # If no moves are possible, re-roll twice to get a six
             if moves == self.state[player_index] :
                 roll = self.getDieRoll()
+                if self.printout :
+                    print "  re-rolled a " + str(roll)
                 if not roll == 6:
                     roll = self.getDieRoll()
+                    if self.printout :
+                        print "  re-rolled a " + str(roll)
                 moves = self.getPossibleMoves(player_index, roll)
                 if self.printout :
                     print "    possible moves: " + str(moves)
